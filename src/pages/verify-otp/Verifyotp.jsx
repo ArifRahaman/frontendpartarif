@@ -140,9 +140,10 @@ const OtpVerification = () => {
                 localStorage.setItem('userId', response.data.userId); // Store userId in localStorage
                 localStorage.setItem("author", response.data.username);
                 localStorage.setItem("jwt",response.data.token);
-                socket.emit('Online', email); 
-                navigate('/upload');
-                // window.location.reload();
+                setTimeout(() => {
+                    navigate('/dashboard');
+                }, 1500);
+                window.alert("Please refresh the page once");
             }
         } catch (error) {
             setMessage('Invalid or expired OTP');
