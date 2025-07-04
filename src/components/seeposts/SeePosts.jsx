@@ -13,7 +13,7 @@ const PostsList = () => {
   // const username = localStorage.getItem("username");
   const  authUser  = useAuthContext();
   console.log(authUser)
-  const username=authUser.authUser.username;
+  const username=authUser.username;
   
   useEffect(() => {
     const fetchPosts = async () => {
@@ -146,7 +146,8 @@ const PostsList = () => {
                 </div>
                 {post.cover && (
                   <img
-                    src={post.cover}
+               src={`${import.meta.env.VITE_BACKEND_DOMAIN}/${post.cover}`}
+
                     alt={post.title}
                     className="mb-4 w-full h-40 object-cover rounded-lg shadow-sm"
                   />

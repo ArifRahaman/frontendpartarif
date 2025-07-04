@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuthContext } from "../Context/AuthContext";
 import "react-toastify/dist/ReactToastify.css";
+import { ToastContainer } from "react-toastify";
 
 const Signup = lazy(() => import("./pages/signup/Signup"));
 const Login = lazy(() => import("./pages/login/Login"));
@@ -29,6 +30,16 @@ function App() {
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
+       <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        pauseOnHover
+        draggable
+        pauseOnFocusLoss
+      />
       <div className="flex-grow">
         <Suspense fallback={<div className="loading-spinner">Loading...</div>}>
           <Routes>

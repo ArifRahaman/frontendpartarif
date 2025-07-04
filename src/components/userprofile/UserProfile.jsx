@@ -3,6 +3,7 @@ import { useAuthContext } from "../../../Context/AuthContext";
 import { toast } from "react-toastify";
 import { Link } from "react-router-dom";
 import io from 'socket.io-client'; // Import socket.io-client
+// import { UserContext } from '../../../Context';
 
 import axios from "axios";
 import { FaPen, FaCheck, FaTimes } from "react-icons/fa";
@@ -30,14 +31,30 @@ const Dashboard = () => {
     universityname: "",
   });
 
+  // Fetch user data on initial load or after any update
+  const fetchUserData = async () => {
+    if (authUser) {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_DOMAIN}/user/${authUser._id}`);
+        if (!res.ok) {
+          throw new Error('Failed to fetch user data');
+        }
+        const updatedUserData = await res.json();
+        setUserData(updatedUserData);
+      } catch (error) {
+        toast.error(error.message);
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchUserData();  // Fetch user data when component mounts
+  }, [authUser]);
+
   useEffect(() => {
     const storedImageUrl = localStorage.getItem("uploadedImageUrl");
     if (storedImageUrl) setUploadedImage(storedImageUrl);
   }, []);
-
-  useEffect(() => {
-    if (authUser) setUserData(authUser);
-  }, [authUser]);
 
   const handleFileChange = (e) => setSelectedFile(e.target.files[0]);
 
@@ -71,10 +88,9 @@ const Dashboard = () => {
         const errorData = await res.json();
         throw new Error(errorData?.error || "Failed to update");
       }
-      Imagemodel
-      const updatedUserData = { ...userData, [field]: editData[field] };
-      localStorage.setItem("chat-user", JSON.stringify(updatedUserData));
-      setUserData(updatedUserData);
+
+      // Fetch updated user data after a successful update
+      fetchUserData();
       setIsEditing((prev) => ({ ...prev, [field]: false }));
       toast.success("Successfully updated");
       setEditData((prev) => ({ ...prev, [field]: "" }));
@@ -85,8 +101,8 @@ const Dashboard = () => {
 
   const handleUpload = async () => {
     if (!selectedFile) {
-        toast.error("Please select a file to upload.");
-        return;
+      toast.error("Please select a file to upload.");
+      return;
     }
 
     const formData = new FormData();
@@ -95,25 +111,28 @@ const Dashboard = () => {
     formData.append("employeeId", userData._id);
 
     try {
-        const response = await axios.post(
-            `${import.meta.env.VITE_BACKEND_DOMAIN}/upload_profile_image`,
-            formData,
-            {
-                headers: { "Content-Type": "multipart/form-data" },
-            }
-        );
-
-        if (response.data && response.data.imageNew) {
-            setUploadedImage(response.data.imageNew.profileImage);
-            toast.success("File uploaded successfully!");
-            localStorage.setItem("uploadedImageUrl", response.data.imageNew.profileImage);
-        } else {
-            toast.error("Failed to upload file.");
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_DOMAIN}/upload_profile_image`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
         }
-    } catch (error) {
+      );
+
+      if (response.data && response.data.imageNew) {
+        setUploadedImage(response.data.imageNew.profileImage);
+        toast.success("File uploaded successfully!");
+        localStorage.setItem("uploadedImageUrl", response.data.imageNew.profileImage);
+
+        // Fetch updated user data after image upload
+        fetchUserData();
+      } else {
         toast.error("Failed to upload file.");
+      }
+    } catch (error) {
+      toast.error("Failed to upload file.");
     }
-};
+  };
 
   const fadeIn = useSpring({
     from: { opacity: 0, transform: "translateY(20px)" },
@@ -170,47 +189,59 @@ const Dashboard = () => {
           <div className="profile-details mt-6 w-full">
             {filteredUserData && (
               <div className="space-y-3">
-                {Object.keys(filteredUserData).map((key) => (
-                  <animated.div key={key} style={fadeIn} className="p-2 w-full">
-                    <div className="flex justify-between items-center bg-white p-3 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
-                      <div className="text-gray-700 font-semibold capitalize">
-                        {key.replace(/([A-Z])/g, " $1").toLowerCase()}
+                {Object.keys(filteredUserData)
+                  .filter(
+                    (key) =>
+                      key !== "password" &&
+                      key !== "__v" &&
+                      key !== "otp" &&
+                      key !== "otp expiry" &&
+                      key !== "images" &&
+                      key!= "profile image" &&
+                      key !== "otpExpiry"&&
+                      key!=="profileImage"
+                  )
+                  .map((key) => (
+                    <animated.div key={key} style={fadeIn} className="p-2 w-full">
+                      <div className="flex justify-between items-center bg-white p-3 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
+                        <div className="text-gray-700 font-semibold capitalize">
+                          {key.replace(/([A-Z])/g, " $1").toLowerCase()}
+                        </div>
+                        {isEditing[key] ? (
+                          <div className="flex items-center">
+                            <input
+                              type={key === "dob" ? "date" : "text"}
+                              className="border p-2 rounded mr-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                              value={editData[key]}
+                              onChange={(e) => handleChange(e, key)}
+                            />
+                            <button
+                              className="bg-green-500 text-white p-2 rounded-full mr-2 hover:bg-green-600 transition-colors duration-300"
+                              onClick={() => handleSubmit(key)}
+                            >
+                              <FaCheck />
+                            </button>
+                            <button
+                              className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors duration-300"
+                              onClick={() => handleCancel(key)}
+                            >
+                              <FaTimes />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center">
+                            <span className="mr-2">{filteredUserData[key]}</span>
+                            <button
+                              className="text-blue-500 hover:text-blue-700 transition-colors duration-300"
+                              onClick={() => handleEdit(key)}
+                            >
+                              <FaPen />
+                            </button>
+                          </div>
+                        )}
                       </div>
-                      {isEditing[key] ? (
-                        <div className="flex items-center">
-                          <input
-                            type={key === "dob" ? "date" : "text"}
-                            className="border p-2 rounded mr-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                            value={editData[key]}
-                            onChange={(e) => handleChange(e, key)}
-                          />
-                          <button
-                            className="bg-green-500 text-white p-2 rounded-full mr-2 hover:bg-green-600 transition-colors duration-300"
-                            onClick={() => handleSubmit(key)}
-                          >
-                            <FaCheck />
-                          </button>
-                          <button
-                            className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors duration-300"
-                            onClick={() => handleCancel(key)}
-                          >
-                            <FaTimes />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center">
-                          <span className="mr-2">{filteredUserData[key]}</span>
-                          <button
-                            className="text-blue-500 hover:text-blue-700 transition-colors duration-300"
-                            onClick={() => handleEdit(key)}
-                          >
-                            <FaPen />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </animated.div>
-                ))}
+                    </animated.div>
+                  ))}
               </div>
             )}
           </div>
