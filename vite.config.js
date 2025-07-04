@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     port: 5173,  // Set the port to 5173
     host: '0.0.0.0',  // Ensure it binds to all network interfaces
-    allowedHosts:"frontendpartarif.onrender.com"
+    allowedHosts:['frontendpartarif.onrender.com']
   },
       // allowedHosts: ['']
 });
